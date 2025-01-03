@@ -1,46 +1,77 @@
 const gulp = require('gulp');
 const sass = require('gulp-sass')(require('sass'));
 const cleanCSS = require('gulp-clean-css');
-const uglify = require('gulp-uglify');
-const rename = require('gulp-rename');
 const sourcemaps = require('gulp-sourcemaps');
-const concat = require('gulp-concat');
+const uglify = require('gulp-uglify');
+const mode = require('gulp-mode')({
+	modes: ['production', 'development'],
+	default: 'development',
+	verbose: false
+});
+const clean = require('gulp-clean');
 
-// Compile SCSS into CSS and minify
-function styles() {
-	return gulp.src('src/scss/**/*.scss')
-		.pipe(sourcemaps.init())
-		.pipe(sass().on('error', sass.logError))
-		.pipe(cleanCSS())
-		.pipe(rename({ suffix: '.min' }))
-		.pipe(sourcemaps.write('.'))
-		.pipe(gulp.dest('dist/css'));
+async function getAutoPrefixer() {
+	const module = await import('gulp-autoprefixer');
+	return module.default;
 }
 
-// Minify and concatenate JS files
+const paths = {
+	styles: {
+		src: 'src/scss/**/*.scss',
+		dest: 'dist/css/'
+	},
+	scripts: {
+		src: 'src/js/**/*.js',
+		dest: 'dist/js/'
+	}
+}
+
+// clean CSS files in dist folder
+function cleanCSSFiles() {
+	return gulp.src(paths.styles.dest, { read: false, allowEmpty: true }).pipe(clean());
+}
+
+// clean JS files in dist folder
+function cleanJSFiles() {
+	return gulp.src(paths.scripts.dest, { read: false, allowEmpty: true }).pipe(clean());
+}
+
+// Compile SCSS to CSS, add sourcemaps, autoprefix, and minify
+async function styles() {
+	const autoprefixer = await getAutoPrefixer();
+	return gulp.src(paths.styles.src)
+		.pipe(mode.development(sourcemaps.init()))
+		.pipe(sass().on('error', sass.logError))
+		.pipe(autoprefixer({
+			cascade: false
+		}))
+		.pipe(mode.production(cleanCSS()))
+		.pipe(mode.development(sourcemaps.write('.')))
+		.pipe(gulp.dest(paths.styles.dest));
+}
+
+// Minify JS files
 function scripts() {
-	return gulp.src('src/js/**/*.js')
-		.pipe(sourcemaps.init())
-		.pipe(concat('main.js'))
-		.pipe(uglify())
-		.pipe(rename({ suffix: '.min' }))
-		.pipe(sourcemaps.write('.'))
-		.pipe(gulp.dest('dist/js'));
+	return gulp.src(paths.scripts.src)
+		.pipe(mode.development(sourcemaps.init()))
+		.pipe(mode.production(uglify()))
+		.pipe(mode.development(sourcemaps.write('.')))
+		.pipe(gulp.dest(paths.scripts.dest));
 }
 
 // Watch files for changes
-function watchFiles() {
-	gulp.watch('src/scss/**/*.scss', styles);
-	gulp.watch('src/js/**/*.js', scripts);
+function watch() {
+	gulp.watch(paths.styles.src, gulp.series(cleanCSSFiles, styles));
+	gulp.watch(paths.scripts.src, gulp.series(cleanJSFiles, scripts));
 }
 
 // Define complex tasks
-const build = gulp.series(gulp.parallel(styles, scripts));
-const watch = gulp.series(build, gulp.parallel(watchFiles));
+const build = gulp.series(gulp.parallel(cleanCSSFiles, cleanJSFiles), gulp.parallel(styles, scripts));
+const dev = gulp.series(build, watch);
 
 // Export tasks
 exports.styles = styles;
 exports.scripts = scripts;
-exports.build = build;
 exports.watch = watch;
-exports.default = build;
+exports.build = build;
+exports.default = dev;
