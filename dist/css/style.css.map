@@ -1,1 +1,0 @@
-{"version":3,"sources":["data:;charset=utf-8,body%20%7B%0D%0A%09color:%20red;%0D%0A%09font-size:%2010px;%0D%0A%7D","style.css"],"names":[],"mappings":"AAAA;EACC,UAAA;EACA,eAAA;ACCD","file":"style.css","sourcesContent":["body {\r\n\tcolor: red;\r\n\tfont-size: 10px;\r\n}","body {\n  color: red;\n  font-size: 10px;\n}"]}

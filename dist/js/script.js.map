@@ -1,1 +1,0 @@
-{"version":3,"names":[],"mappings":"","sources":["script.js"],"sourcesContent":["class MBirdFilter {\r\n  constructor(startParam, type, filterAction, countAction, taxCountAction) {\r\n\tthis._init();\r\n  }\r\n\r\n  _init() {\r\n\tconsole.log('Bird is flying');\r\n  }\r\n}"],"file":"script.js"}
