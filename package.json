@@ -1,0 +1,22 @@
+{
+	"name": "mbird-filters",
+	"version": "1.0.0",
+	"description": "Gulp setup for compiling SCSS and minifying JS",
+	"main": "gulpfile.js",
+	"scripts": {
+		"build": "gulp build",
+		"watch": "gulp watch"
+	},
+	"author": "Kathleen Glackin",
+	"license": "ISC",
+	"devDependencies": {
+		"gulp": "^5.0.0",
+		"gulp-clean-css": "^4.3.0",
+		"gulp-concat": "^2.6.1",
+		"gulp-rename": "^2.0.0",
+		"gulp-sass": "^6.0.0",
+		"gulp-sourcemaps": "^2.6.5",
+		"gulp-uglify": "^3.0.2",
+		"sass": "^1.83.0"
+	}
+}
