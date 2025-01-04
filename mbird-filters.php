@@ -14,16 +14,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class MBird_Filters {
 	private $shortcode_used = false;
+	private $plugin_slug = 'mbird-filters';
+	private $github_url = 'https://api.github.com/repos/KathleenGlackin/mbird-filters/releases/latest';
 
 	public function __construct() {
-		// add_action( 'admin_menu', array( $this, 'mbird_filters_menu' ) );
-		// add_action( 'admin_enqueue_scripts', array( $this, 'mbird_filters_scripts' ) );
 		add_shortcode( 'mbird_filter', array( $this, 'mbird_filters_shortcode' ) );
-		// add_action( 'wp', array( $this, 'conditionally_enqueue_scripts' ) );
+		add_action( 'wp', array( $this, 'conditionally_enqueue_scripts' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'mbird_filters_scripts' ) );
 
 		add_action( 'wp_ajax_mbird_load', array( $this, 'mbird_load_ajax' ) );
 		add_action( 'wp_ajax_nopriv_mbird_load', array( $this, 'mbird_load_ajax' ) );
+
+		// Add update checker
+		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'mbird_check_for_update' ) );
+		add_filter( 'plugins_api', array( $this, 'mbird_plugins_api_handler' ), 10, 3 );
 	}
 
 	// enqueue scripts
@@ -201,6 +205,61 @@ class MBird_Filters {
 		);
 
 		wp_send_json($response);
+	}
+
+	// Check for updates
+	public function mbird_check_for_update( $transient ) {
+		if ( empty( $transient->checked ) ) {
+			return $transient;
+		}
+
+		$response = wp_remote_get( $this->github_url );
+		if ( is_wp_error( $response ) ) {
+			return $transient;
+		}
+
+		$release = json_decode( wp_remote_retrieve_body( $response ) );
+		if ( version_compare( $release->tag_name, $transient->checked[ $this->plugin_slug . '/' . $this->plugin_slug . '.php' ], '>' ) ) {
+			$transient->response[ $this->plugin_slug . '/' . $this->plugin_slug . '.php' ] = (object) array(
+				'slug'        => $this->plugin_slug,
+				'new_version' => $release->tag_name,
+				'url'         => $release->html_url,
+				'package'     => $release->zipball_url,
+			);
+		}
+
+		return $transient;
+	}
+
+	// Handle plugin information
+	public function mbird_plugins_api_handler( $res, $action, $args ) {
+		if ( 'plugin_information' !== $action ) {
+			return $res;
+		}
+
+		if ( $this->plugin_slug !== $args->slug ) {
+			return $res;
+		}
+
+		$response = wp_remote_get( $this->github_url );
+		if ( is_wp_error( $response ) ) {
+			return $res;
+		}
+
+		$release = json_decode( wp_remote_retrieve_body( $response ) );
+		$res = (object) array(
+			'name'          => $release->name,
+			'slug'          => $this->plugin_slug,
+			'version'       => $release->tag_name,
+			'author'        => '<a href="https://kathleenglackin.com">Kathleen Glackin</a>',
+			'homepage'      => $release->html_url,
+			'download_link' => $release->zipball_url,
+			'sections'      => array(
+				'description' => $release->body,
+			),
+		);
+
+		return $res;
 	}
 
 	// activation hook
