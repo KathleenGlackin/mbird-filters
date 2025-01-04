@@ -29,6 +29,7 @@ class MBird_Filters {
 		// Add update checker
 		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'mbird_check_for_update' ) );
 		add_filter( 'plugins_api', array( $this, 'mbird_plugins_api_handler' ), 10, 3 );
+		add_action( 'upgrader_process_complete', array( $this, 'mbird_rename_plugin_folder' ), 10, 2 );
 	}
 
 	// enqueue scripts
@@ -239,7 +240,10 @@ class MBird_Filters {
 				'slug'        => $this->plugin_slug,
 				'new_version' => $new_version,
 				'url'         => $release->html_url,
-				'package'     => $release->zipball_url,
+				'package'     => add_query_arg( array(
+					'download' => 1,
+					'filename' => 'mbird-filters.zip',
+				), $release->zipball_url ),
 			);
 			// error_log( 'Update available: ' . print_r( $transient->response[ $this->plugin_file ], true ) );
 		}
@@ -281,6 +285,24 @@ class MBird_Filters {
 		);
 
 		return $res;
+	}
+
+	// Rename plugin folder after update
+	public function mbird_rename_plugin_folder( $upgrader_object, $options ) {
+		if ( $options['action'] == 'update' && $options['type'] == 'plugin' ) {
+			$plugin_dir = WP_PLUGIN_DIR;
+			$pattern = $plugin_dir . '/KathleenGlackin-mbird-filters-*';
+			$matches = glob( $pattern );
+
+			if ( !empty($matches) ) {
+				$plugin_path = $matches[0];
+				$new_plugin_path = $plugin_dir . '/mbird-filters';
+
+				if ( is_dir( $plugin_path ) ) {
+					rename( $plugin_path, $new_plugin_path );
+				}
+			}
+		}
 	}
 
 	// activation hook
