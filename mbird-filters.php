@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.2.0
+ * Version: 1.1
  * 
  */
 
@@ -234,15 +234,16 @@ class MBird_Filters {
 		// error_log( 'Current version: ' . $current_version );
 		// error_log( 'New version: ' . $new_version );
 
-		// if ( version_compare( $new_version, $current_version, '>' ) ) {
-		// 	$transient->response[ $this->plugin_file ] = (object) array(
-		// 		'slug'        => $this->plugin_slug,
-		// 		'new_version' => $new_version,
-		// 		'url'         => $release->html_url,
-		// 		'package'     => $release->zipball_url,
-		// 	);
-		// 	error_log( 'Update available: ' . print_r( $transient->response[ $this->plugin_file ], true ) );
-		// } else {
+		if ( version_compare( $new_version, $current_version, '>' ) ) {
+			$transient->response[ $this->plugin_file ] = (object) array(
+				'slug'        => $this->plugin_slug,
+				'new_version' => $new_version,
+				'url'         => $release->html_url,
+				'package'     => $release->zipball_url,
+			);
+			// error_log( 'Update available: ' . print_r( $transient->response[ $this->plugin_file ], true ) );
+		}
+		// else {
 		// 	error_log( 'No update available' );
 		// }
 
