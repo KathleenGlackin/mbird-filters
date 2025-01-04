@@ -29,6 +29,7 @@ class MBird_Filters {
 	// enqueue scripts
 	public function mbird_filters_scripts() {
 		wp_enqueue_style( 'mbird-filters-style', plugins_url( 'dist/css/style.css', __FILE__ ) );
+		wp_enqueue_script( 'mbird-filters-class', plugins_url( 'dist/js/MBirdFilter.js', __FILE__ ), array( 'jquery' ), null, true );
 		wp_enqueue_script( 'mbird-filters-script', plugins_url( 'dist/js/script.js', __FILE__ ), array( 'jquery' ), null, true );
 		wp_localize_script( 'mbird-filters-script', 'mbirdFilters', array(
 			'ajaxurl' => admin_url( 'admin-ajax.php' )
@@ -48,13 +49,29 @@ class MBird_Filters {
 
 		$atts = shortcode_atts( array(
 			'post_type' => 'post',
-			'taxonomy' => 'category',
+			'filters' => '',
 			'order' => 'ASC',
 			'orderby' => 'name',
 			'posts_per_page' => 9
 		), $atts, 'mbird_filter' );
 
-		$taxonomies = explode( ',', $atts['taxonomy'] ); // convert string to array
+		$taxonomies = explode( ',', $atts['filters'] ); // convert filter options set to array
+
+		$tax_query = array(
+			'relation' => 'AND'
+		);
+
+		foreach($taxonomies as $tax) {
+			$tax_query[] =
+			array(
+				'taxonomy' => $tax,
+				'field' => 'slug',
+				'terms' => array()
+			);
+		}
+
+		$atts['tax_query'] = $tax_query;
+		unset($atts['filters']);
 
 		ob_start(); ?>
 		<div class="ymc-smart-filter-container mbird-filter">
@@ -62,6 +79,7 @@ class MBird_Filters {
 				<div class="sticky-block-wrapper">
 					<form id="mbird-filter-form">
 						<input type="hidden" name="shortcode_atts" value="<?php echo esc_attr( json_encode( $atts ) ); ?>" />
+						
 						<a class="btn-all" href="#" id="mbird-filter-reset"><?php _e('Reset', 'textdomain' ); ?></a>
 
 						<?php foreach($taxonomies as $tax) :
@@ -110,13 +128,14 @@ class MBird_Filters {
 				</div>
 			</div>
 
-			<!-- <h3><?php echo esc_html( $atts['post_type'] ); ?></h3>
-			<p>This is the content for the <?php echo esc_html( $atts['post_type'] ); ?> filter.</p> -->
-
 			<div id="mbird-filter-results"></div>
 
 			<div id="mbird-filter-loader">
 				<img src="<?php echo plugins_url( 'dist/img/loader.svg', __FILE__ ); ?>" alt="Loading...">
+			</div>
+
+			<div class="mbird-filter-pagination">
+				<button id="mbird-load-more" class="btn-load"><?php _e('Load More', 'textdomain' ); ?></button>
 			</div>
 		</div>
 
@@ -147,6 +166,17 @@ class MBird_Filters {
 			'paged' => $page
 		);
 
+		// conditionally set tax_query if any of the terms are set
+		if (isset($atts['tax_query']) && !empty($atts['tax_query'])) {
+			$tax_query = array_filter($atts['tax_query'], function($query) {
+				return !empty($query['terms']);
+			});
+
+			if (!empty($tax_query)) {
+				$args['tax_query'] = $tax_query;
+			}
+		}
+
 		$posts = new WP_Query( $args );
 		$output = '';
 
@@ -158,7 +188,7 @@ class MBird_Filters {
 			}
 			$output = ob_get_clean();
 		} else {
-			$output = 'No posts found.';
+			$output = false;
 		}
 
 		wp_send_json($output);
