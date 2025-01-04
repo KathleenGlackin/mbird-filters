@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name: Mockingbird Filters
- * Description: A collection of filters for the Mockingbird theme.
+ * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
- * Author URI: http://kathleenglackin.com
+ * Author URI: https://kathleenglackin.com
  * Version: 1.0
  * 
  */
@@ -22,8 +22,8 @@ class MBird_Filters {
 		// add_action( 'wp', array( $this, 'conditionally_enqueue_scripts' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'mbird_filters_scripts' ) );
 
-		add_action( 'wp_ajax_mbird_initial_load', array( $this, 'mbird_load_ajax' ) );
-		add_action( 'wp_ajax_nopriv_mbird_initial_load', array( $this, 'mbird_load_ajax' ) );
+		add_action( 'wp_ajax_mbird_load', array( $this, 'mbird_load_ajax' ) );
+		add_action( 'wp_ajax_nopriv_mbird_load', array( $this, 'mbird_load_ajax' ) );
 	}
 
 	// enqueue scripts
@@ -150,7 +150,7 @@ class MBird_Filters {
 		return $content;
 	}
 
-	// initial data load
+	// load data
 	public function mbird_load_ajax() {
 		// Retrieve shortcode attributes from the AJAX request
 		$atts = isset($_POST['shortcode_atts']) ? json_decode(stripslashes($_POST['shortcode_atts']), true) : array();
@@ -194,27 +194,14 @@ class MBird_Filters {
 		wp_send_json($output);
 	}
 
-	// filter ajax
-	public function mbird_filter_ajax() {
-		// Basic static response
-		$response = array(
-			'status' => 'success',
-			'message' => 'AJAX request received successfully.'
-		);
-
-		$response = $_POST['terms'];
-
-		wp_send_json($response);
-	}
-
 	// activation hook
 	public static function mbird_filters_activate() {
-		add_option( 'mbird_filters_option', 'This is my option value.' );
+		// add_option( 'mbird_filters_option', 'This is my option value.' );
 	}
 
 	//deactivation hook
 	public static function mbird_filters_deactivate() {
-		delete_option( 'mbird_filters_option' );
+		// delete_option( 'mbird_filters_option' );
 	}
 }
 

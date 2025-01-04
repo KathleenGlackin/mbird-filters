@@ -53,12 +53,14 @@
 .mbird-filter .mbird-filter-layout .sticky-block-wrapper .dropdown-filter .dropdown-menu {
   display: none;
   position: absolute;
-  top: 100%;
+  top: 115%;
   left: 0;
   right: 0;
   background-color: white;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
   z-index: 1;
+  overflow: scroll;
+  max-height: 320px;
+  border: 1px solid #D6D7D9;
 }
 .mbird-filter .mbird-filter-layout .sticky-block-wrapper .dropdown-filter .dropdown-menu.show {
   display: block;

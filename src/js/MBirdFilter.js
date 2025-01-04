@@ -19,8 +19,14 @@ class MBirdFilter {
 			this._runFilters();
 		});
 
-		// Load initial data
-		this._loadData();
+		// Check for URL parameters and set filter options if present
+		const urlParams = new URLSearchParams(window.location.search);
+		if (urlParams.toString()) {
+			this._setFiltersFromUrl();
+		} else {
+			// Load initial data if no URL parameters are present
+			this._loadData();
+		}
 
 		// Add event listener for Load More button
 		jQuery('#mbird-load-more').on('click', (event) => {
@@ -35,6 +41,20 @@ class MBirdFilter {
 		});
 	}
 
+	_setFiltersFromUrl() {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		urlParams.forEach((value, key) => {
+			const filterElement = jQuery(`#filter-${key}-${value}`);
+			if (filterElement.length) {
+				filterElement.prop('checked', true);
+			}
+		});
+
+		// Apply filters based on URL parameters
+		this._runFilters();
+	}
+
 	_loadData() {
 		jQuery("#mbird-filter-loader").show();
 
@@ -44,7 +64,7 @@ class MBirdFilter {
 			url: mbirdFilters.ajaxurl, // use localized ajaxurl
 			type: 'POST',
 			data: {
-				action: 'mbird_initial_load',
+				action: 'mbird_load',
 				security: jQuery('#mbird_filter_nonce_field').val(),
 				shortcode_atts: shortcodeAtts,
 				page: this.currentPage // Include current page in the request
