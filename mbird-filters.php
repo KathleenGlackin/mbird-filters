@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.1
+ * Version: 1.2
  * 
  */
 
