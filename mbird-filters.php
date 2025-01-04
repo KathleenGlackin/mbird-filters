@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.3
+ * Version: 1.4
  * 
  */
 
@@ -20,7 +20,6 @@ class MBird_Filters {
 
 	public function __construct() {
 		add_shortcode( 'mbird_filter', array( $this, 'mbird_filters_shortcode' ) );
-		add_action( 'wp', array( $this, 'conditionally_enqueue_scripts' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'mbird_filters_scripts' ) );
 
 		add_action( 'wp_ajax_mbird_load', array( $this, 'mbird_load_ajax' ) );
@@ -42,17 +41,8 @@ class MBird_Filters {
 		));
 	}
 
-	// conditionally enqueue scripts
-	public function conditionally_enqueue_scripts() {
-		if ( $this->shortcode_used ) {
-			add_action( 'wp_enqueue_scripts', array( $this, 'mbird_filters_scripts' ) );
-		}
-	}
-
 	// shortcode handler
 	public function mbird_filters_shortcode( $atts ) {
-		$this->shortcode_used = true;
-
 		$atts = shortcode_atts( array(
 			'post_type' => 'post',
 			'filters' => '',
@@ -217,23 +207,16 @@ class MBird_Filters {
 
 		$response = wp_remote_get( $this->github_url );
 		if ( is_wp_error( $response ) ) {
-			// error_log( 'GitHub API request failed: ' . $response->get_error_message() );
 			return $transient;
 		}
 
 		$release = json_decode( wp_remote_retrieve_body( $response ) );
 		if ( ! $release ) {
-			// error_log( 'Failed to decode GitHub API response' );
 			return $transient;
 		}
 
-		// error_log( 'GitHub API response: ' . print_r( $release, true ) );
-
 		$current_version = $transient->checked[ $this->plugin_file ];
 		$new_version = ltrim( $release->tag_name, 'v' ); // Strip the 'v' prefix
-
-		// error_log( 'Current version: ' . $current_version );
-		// error_log( 'New version: ' . $new_version );
 
 		if ( version_compare( $new_version, $current_version, '>' ) ) {
 			$transient->response[ $this->plugin_file ] = (object) array(
@@ -245,13 +228,7 @@ class MBird_Filters {
 					'filename' => 'mbird-filters.zip',
 				), $release->zipball_url ),
 			);
-			// error_log( 'Update available: ' . print_r( $transient->response[ $this->plugin_file ], true ) );
 		}
-		// else {
-		// 	error_log( 'No update available' );
-		// }
-
-		// error_log( 'Transient data: ' . print_r( $transient, true ) );
 
 		return $transient;
 	}
@@ -318,7 +295,6 @@ class MBird_Filters {
 
 // Instantiate the class
 $mbird_filters = new MBird_Filters();
-// add_action( 'admin_init', array( $mbird_filters, 'mbird_filters_init' ) );
 
 // register the activation and deactivation hooks
 register_activation_hook( __FILE__, array( $mbird_filters, 'mbird_filters_activate' ) );
