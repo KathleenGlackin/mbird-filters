@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.0
+ * Version: 1.1
  * 
  */
 
@@ -15,6 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 class MBird_Filters {
 	private $shortcode_used = false;
 	private $plugin_slug = 'mbird-filters';
+	private $plugin_file = 'mbird-filters/mbird-filters.php';
 	private $github_url = 'https://api.github.com/repos/KathleenGlackin/mbird-filters/releases/latest';
 
 	public function __construct() {
@@ -215,18 +216,37 @@ class MBird_Filters {
 
 		$response = wp_remote_get( $this->github_url );
 		if ( is_wp_error( $response ) ) {
+			// error_log( 'GitHub API request failed: ' . $response->get_error_message() );
 			return $transient;
 		}
 
 		$release = json_decode( wp_remote_retrieve_body( $response ) );
-		if ( version_compare( $release->tag_name, $transient->checked[ $this->plugin_slug . '/' . $this->plugin_slug . '.php' ], '>' ) ) {
-			$transient->response[ $this->plugin_slug . '/' . $this->plugin_slug . '.php' ] = (object) array(
-				'slug'        => $this->plugin_slug,
-				'new_version' => $release->tag_name,
-				'url'         => $release->html_url,
-				'package'     => $release->zipball_url,
-			);
+		if ( ! $release ) {
+			// error_log( 'Failed to decode GitHub API response' );
+			return $transient;
 		}
+
+		// error_log( 'GitHub API response: ' . print_r( $release, true ) );
+
+		$current_version = $transient->checked[ $this->plugin_file ];
+		$new_version = ltrim( $release->tag_name, 'v' ); // Strip the 'v' prefix
+
+		// error_log( 'Current version: ' . $current_version );
+		// error_log( 'New version: ' . $new_version );
+
+		// if ( version_compare( $new_version, $current_version, '>' ) ) {
+		// 	$transient->response[ $this->plugin_file ] = (object) array(
+		// 		'slug'        => $this->plugin_slug,
+		// 		'new_version' => $new_version,
+		// 		'url'         => $release->html_url,
+		// 		'package'     => $release->zipball_url,
+		// 	);
+		// 	error_log( 'Update available: ' . print_r( $transient->response[ $this->plugin_file ], true ) );
+		// } else {
+		// 	error_log( 'No update available' );
+		// }
+
+		// error_log( 'Transient data: ' . print_r( $transient, true ) );
 
 		return $transient;
 	}
@@ -250,7 +270,7 @@ class MBird_Filters {
 		$res = (object) array(
 			'name'          => $release->name,
 			'slug'          => $this->plugin_slug,
-			'version'       => $release->tag_name,
+			'version'       => ltrim( $release->tag_name, 'v' ), // Strip the 'v' prefix
 			'author'        => '<a href="https://kathleenglackin.com">Kathleen Glackin</a>',
 			'homepage'      => $release->html_url,
 			'download_link' => $release->zipball_url,
