@@ -10,6 +10,8 @@
 		padding-top: 18px;
 
 		.sticky-block-wrapper {
+			padding: 0 8px;
+
 			a {
 				text-decoration: none;
 			}
@@ -41,7 +43,6 @@
 						position: absolute;
 						right: 13px;
 						top: 50%;
-						z-index: 1;
 						border: solid #141518;
 						border-width: 0 3px 3px 0;
 						padding: 3px;
@@ -83,6 +84,37 @@
 							font-weight: 600;
 						}
 					}
+				}
+			}
+			.selected-items {
+				.item {
+					padding: 7px 30px 7px 15px;
+					margin: 0 5px 5px 0;
+					display: inline-block;
+					background: #000;
+					color: #fff;
+					border-radius: 15px;
+					position: relative;
+					line-height: 1;
+
+					small {
+						position: absolute;
+						right: 7px;
+						top: 50%;
+						transform: translateY(-50%);
+						width: 11px;
+						height: 11px;
+						font-size: 11px;
+						display: inline-block;
+						text-align: center;
+						cursor: pointer;
+						line-height: 1;
+					}
+				}
+				#no-remove {
+					font-size: 14px;
+					margin-bottom: 20px;
+					margin-top: 10px;
 				}
 			}
 		}

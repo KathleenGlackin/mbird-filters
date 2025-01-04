@@ -9,6 +9,9 @@
   background-color: #fff;
   padding-top: 18px;
 }
+.mbird-filter .mbird-filter-layout .sticky-block-wrapper {
+  padding: 0 8px;
+}
 .mbird-filter .mbird-filter-layout .sticky-block-wrapper a {
   text-decoration: none;
 }
@@ -40,7 +43,6 @@
   position: absolute;
   right: 13px;
   top: 50%;
-  z-index: 1;
   border: solid #141518;
   border-width: 0 3px 3px 0;
   padding: 3px;
@@ -76,6 +78,34 @@
 }
 .mbird-filter .mbird-filter-layout .sticky-block-wrapper .dropdown-filter .dropdown-menu .dropdown-item label {
   font-weight: 600;
+}
+.mbird-filter .mbird-filter-layout .sticky-block-wrapper .selected-items .item {
+  padding: 7px 30px 7px 15px;
+  margin: 0 5px 5px 0;
+  display: inline-block;
+  background: #000;
+  color: #fff;
+  border-radius: 15px;
+  position: relative;
+  line-height: 1;
+}
+.mbird-filter .mbird-filter-layout .sticky-block-wrapper .selected-items .item small {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 11px;
+  height: 11px;
+  font-size: 11px;
+  display: inline-block;
+  text-align: center;
+  cursor: pointer;
+  line-height: 1;
+}
+.mbird-filter .mbird-filter-layout .sticky-block-wrapper .selected-items #no-remove {
+  font-size: 14px;
+  margin-bottom: 20px;
+  margin-top: 10px;
 }
 .mbird-filter #mbird-filter-results .no-results {
   text-align: center;

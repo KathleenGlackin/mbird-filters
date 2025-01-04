@@ -3,6 +3,7 @@ class MBirdFilter {
 		this.filterFormData = jQuery('#mbird-filter-form').serialize();
 		this.currentPage = 1;
 		this.postsPerPage = 9; // Set this to match the posts_per_page value in the shortcode
+		this.totalPosts = 0;
 		this._init();
 	}
 
@@ -35,6 +36,7 @@ class MBirdFilter {
 			this._loadData();
 		});
 
+		// add event listener for reset button
 		jQuery('#mbird-filter-reset').on('click', (event) => {
 			event.preventDefault();
 			this._resetFilters();
@@ -71,17 +73,29 @@ class MBirdFilter {
 			},
 			success: (response) => {
 				// if there are posts to display, append them to the list
-				if(response) {
-					jQuery('#mbird-filter-results').append(response);
+				if(response.content) {
+					jQuery('#mbird-filter-results').append(response.content);
 
-					// Check if the number of posts returned is less than postsPerPage
-					if (jQuery(response).length < this.postsPerPage) {
+					// Update total number of posts
+					this.totalPosts = response.total;
+					const totalPostsElement = jQuery('#total-posts');
+					totalPostsElement.text(`${response.total}`);
+
+					// Check if there are more posts to load
+					const loadedPosts = jQuery('#mbird-filter-results .post-item').length;
+					if (loadedPosts < this.totalPosts) {
+						jQuery('#mbird-load-more').show();
+					} else {
 						jQuery('#mbird-load-more').hide();
 					}
 				} else {
 					// if no more posts, remove the button and show no more posts text
 					jQuery('#mbird-load-more').hide();
 					jQuery('#mbird-filter-results').html('<p class="no-results">No posts found.</p>');
+
+					// Update total number of posts to 0
+					const totalPostsElement = jQuery('#total-posts');
+					totalPostsElement.text('0');
 				}
 			},
 			error: function(xhr, status, error) {
@@ -106,6 +120,7 @@ class MBirdFilter {
 
 		const urlParams = new URLSearchParams(window.location.search);
 		const taxonomyParams = {};
+		const selectedFilters = [];
 
 		// Clear existing filter parameters from URL
 		Object.keys(shortcodeAtts.tax_query).forEach(key => {
@@ -125,6 +140,11 @@ class MBirdFilter {
 					taxonomyParams[key] = [];
 				}
 				taxonomyParams[key].push(item.value);
+
+				// Add selected filter to the list
+				const label = '<span class="item" data-filter="filter-'+`${key}-${item.value}`+'">'+jQuery(`label[for="filter-${key}-${item.value}"]`).text()+'<small>x</small></span>';
+
+				selectedFilters.push(`${label}`);
 			}
 		});
 
@@ -135,7 +155,20 @@ class MBirdFilter {
 		const newUrl = decodeURIComponent(`${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`);
 		history.pushState(null, '', newUrl);
 
+		// update shortcode_atts with the new filters
 		jQuery('input[name="shortcode_atts"]').val(JSON.stringify(shortcodeAtts));
+
+		 // Preserve the #no-remove element and update the selected filters
+		const noRemoveElement = jQuery('#no-remove').detach();
+		jQuery('#selected-filters').html(selectedFilters);
+		jQuery('#selected-filters').append(noRemoveElement);
+
+		// Add event listener to remove selected filters
+		jQuery('#selected-filters .item small').on('click', (event) => {
+			const filter = jQuery(event.target).closest('.item').data('filter');
+			jQuery(`#${filter}`).prop('checked', false);
+			this._runFilters();
+		});
 
 		this.currentPage = 1; // Reset to the first page
 		jQuery('#mbird-filter-results').empty(); // Clear previous results
@@ -165,6 +198,12 @@ class MBirdFilter {
 		jQuery('#mbird-filter-form')[0].reset();
 		this.currentPage = 1;
 		jQuery('#mbird-filter-results').empty();
+
+		// Preserve the #no-remove element and clear selected filters
+		const noRemoveElement = jQuery('#no-remove').detach();
+		jQuery('#selected-filters').empty();
+		jQuery('#selected-filters').prepend(noRemoveElement);
+
 		this._loadData();
 	}
 }

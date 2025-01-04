@@ -108,6 +108,10 @@ class MBird_Filters {
 						<?php endforeach; ?>
 					</form>
 
+					<div id="selected-filters" class="selected-items">
+						<p id="no-remove"><span id="total-posts"></span> <?php _e('recipients selected', 'textdomain' ); ?> </p>
+					</div>
+
 					<div class="table-header-wrap uag-hide-mob">
 						<div class="grant-recipient-col">
 							<p><?php _e('grant recipient', 'textdomain' ); ?></p>
@@ -191,7 +195,12 @@ class MBird_Filters {
 			$output = false;
 		}
 
-		wp_send_json($output);
+		$response = array(
+			'content' => $output,
+			'total' => $posts->found_posts
+		);
+
+		wp_send_json($response);
 	}
 
 	// activation hook
