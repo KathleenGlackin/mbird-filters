@@ -18,23 +18,27 @@ class MBird_Filters {
 	public function __construct() {
 		// add_action( 'admin_menu', array( $this, 'mbird_filters_menu' ) );
 		// add_action( 'admin_enqueue_scripts', array( $this, 'mbird_filters_scripts' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'conditionally_enqueue_scripts' ) );
 		add_shortcode( 'mbird_filter', array( $this, 'mbird_filters_shortcode' ) );
+		// add_action( 'wp', array( $this, 'conditionally_enqueue_scripts' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'mbird_filters_scripts' ) );
 
-		add_action( 'wp_ajax_mbird_filter', array( $this, 'mbird_filter_ajax' ) );
-		add_action( 'wp_ajax_nopriv_mbird_filter', array( $this, 'mbird_filter_ajax' ) );
+		add_action( 'wp_ajax_mbird_initial_load', array( $this, 'mbird_load_ajax' ) );
+		add_action( 'wp_ajax_nopriv_mbird_initial_load', array( $this, 'mbird_load_ajax' ) );
 	}
 
 	// enqueue scripts
 	public function mbird_filters_scripts() {
-		wp_enqueue_style( 'mbird-filters-style', plugins_url( 'assets/css/style.css', __FILE__ ) );
-		wp_enqueue_script( 'mbird-filters-script', plugins_url( 'assets/js/script.js', __FILE__ ), array( 'jquery' ), null, true );
+		wp_enqueue_style( 'mbird-filters-style', plugins_url( 'dist/css/style.css', __FILE__ ) );
+		wp_enqueue_script( 'mbird-filters-script', plugins_url( 'dist/js/script.js', __FILE__ ), array( 'jquery' ), null, true );
+		wp_localize_script( 'mbird-filters-script', 'mbirdFilters', array(
+			'ajaxurl' => admin_url( 'admin-ajax.php' )
+		));
 	}
 
 	// conditionally enqueue scripts
 	public function conditionally_enqueue_scripts() {
 		if ( $this->shortcode_used ) {
-			$this->mbird_filters_scripts();
+			add_action( 'wp_enqueue_scripts', array( $this, 'mbird_filters_scripts' ) );
 		}
 	}
 
@@ -44,149 +48,133 @@ class MBird_Filters {
 
 		$atts = shortcode_atts( array(
 			'post_type' => 'post',
-			'taxonomy' => 'category'
+			'taxonomy' => 'category',
+			'order' => 'ASC',
+			'orderby' => 'name',
+			'posts_per_page' => 9
 		), $atts, 'mbird_filter' );
 
-		$taxonomies = explode( ',', $atts['taxonomy'] ); // Convert string to array
+		$taxonomies = explode( ',', $atts['taxonomy'] ); // convert string to array
 
-		ob_start();
-		?>
+		ob_start(); ?>
 		<div class="ymc-smart-filter-container mbird-filter">
 			<div class="mbird-filter-layout filter-layout3">
 				<div class="sticky-block-wrapper">
-					<a class="btn-all" href="#" id="mbird-filter-reset"><?php _e('Reset', 'textdomain' ); ?></a>
+					<form id="mbird-filter-form">
+						<input type="hidden" name="shortcode_atts" value="<?php echo esc_attr( json_encode( $atts ) ); ?>" />
+						<a class="btn-all" href="#" id="mbird-filter-reset"><?php _e('Reset', 'textdomain' ); ?></a>
 
-					<?php foreach($taxonomies as $tax) :
-						// get the full taxonomy object
-						$full_tax = get_taxonomy( $tax ); ?>
-						<div class="dropdown-filter tax-<?php echo esc_attr( $tax ); ?>">
-							<button class="menu-active dropdown-toggle" type="button" id="dropdownMenuButton-<?php echo esc_attr( $tax ); ?>">
-								<?php echo esc_html( $full_tax->labels->name ); ?>
-							</button>
+						<?php foreach($taxonomies as $tax) :
+							// get the full taxonomy object
+							$full_tax = get_taxonomy( $tax ); ?>
+							<div class="dropdown-filter tax-<?php echo esc_attr( $tax ); ?>">
+								<a class="menu-active dropdown-toggle" id="dropdownMenuButton-<?php echo esc_attr( $tax ); ?>">
+									<?php echo esc_html( $full_tax->labels->name ); ?>
+									<i class="arrow down"></i>
+								</a>
 
-							<div class="dropdown-menu" id="dropdownMenu-<?php echo esc_attr( $tax ); ?>">
-								<?php
-								$terms = get_terms( array(
-									'taxonomy' => $tax,
-									'hide_empty' => false
-								) );
-								foreach ( $terms as $term ) : ?>
-									<div class="dropdown-item">
-										<input type="checkbox" id="filter-<?php echo esc_attr( $tax ); ?>-<?php echo esc_attr( $term->term_id ); ?>" class="filter-checkbox" value="<?php echo esc_attr( $term->term_id ); ?>">
-										<label for="filter-<?php echo esc_attr( $tax ); ?>-<?php echo esc_attr( $term->term_id ); ?>"><?php echo esc_html( $term->name ); ?></label>
-									</div>
-								<?php endforeach; ?>
+								<div class="dropdown-menu" id="dropdownMenu-<?php echo esc_attr( $tax ); ?>">
+									<?php
+									$terms = get_terms( array(
+										'taxonomy' => $tax,
+										'hide_empty' => false
+									) );
+									foreach ( $terms as $term ) : ?>
+										<div class="dropdown-item">
+											<input type="checkbox" id="filter-<?php echo esc_attr( $tax ); ?>-<?php echo esc_attr( $term->slug ); ?>" class="filter-checkbox" value="<?php echo esc_attr( $term->slug ); ?>" name="filter-<?php echo esc_attr( $tax ); ?>">
+											<label for="filter-<?php echo esc_attr( $tax ); ?>-<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></label>
+										</div>
+									<?php endforeach; ?>
+								</div>
 							</div>
+						<?php endforeach; ?>
+					</form>
+
+					<div class="table-header-wrap uag-hide-mob">
+						<div class="grant-recipient-col">
+							<p><?php _e('grant recipient', 'textdomain' ); ?></p>
 						</div>
-					<?php endforeach; ?>
+						<div class="grant-amount-col">
+							<p><?php _e('amount', 'textdomain' ); ?></p>
+						</div>
+						<div class="grant-type-col">
+							<p><?php _e('grant type', 'textdomain' ); ?></p>
+						</div>
+						<div class="grant-category-col">
+							<p><?php _e('category', 'textdomain' ); ?></p>
+						</div>
+						<div class="grant-year-col">
+							<p><?php _e('year', 'textdomain' ); ?></p>
+						</div>
+					</div>
 				</div>
 			</div>
-			<h3><?php echo esc_html( $atts['post_type'] ); ?></h3>
-			<p>This is the content for the <?php echo esc_html( $atts['post_type'] ); ?> filter.</p>
+
+			<!-- <h3><?php echo esc_html( $atts['post_type'] ); ?></h3>
+			<p>This is the content for the <?php echo esc_html( $atts['post_type'] ); ?> filter.</p> -->
+
+			<div id="mbird-filter-results"></div>
+
+			<div id="mbird-filter-loader">
+				<img src="<?php echo plugins_url( 'dist/img/loader.svg', __FILE__ ); ?>" alt="Loading...">
+			</div>
 		</div>
 
 		<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				var dropdownToggles = document.querySelectorAll('.dropdown-toggle');
-				dropdownToggles.forEach(function(toggle) {
-					toggle.addEventListener('click', function() {
-						var menuId = this.getAttribute('id').replace('Button', '');
-						var menu = document.getElementById(menuId);
-
-						// Close all dropdowns except the one being toggled
-						var dropdowns = document.querySelectorAll('.dropdown-menu');
-						dropdowns.forEach(function(dropdown) {
-							if (dropdown !== menu && dropdown.classList.contains('show')) {
-								dropdown.classList.remove('show');
-							}
-						});
-
-						// Toggle the clicked dropdown
-						menu.classList.toggle('show');
-					});
-				});
-
-				document.addEventListener('click', function(event) {
-					if (!event.target.matches('.dropdown-toggle')) {
-						var dropdowns = document.querySelectorAll('.dropdown-menu');
-						dropdowns.forEach(function(dropdown) {
-							if (dropdown.classList.contains('show')) {
-								dropdown.classList.remove('show');
-							}
-						});
-					}
-				});
-
-				// Prevent dropdown from closing when clicking on checkboxes or labels
-				var checkboxes = document.querySelectorAll('.filter-checkbox');
-				checkboxes.forEach(function(checkbox) {
-					checkbox.addEventListener('click', function(event) {
-						event.stopPropagation();
-					});
-				});
-
-				var labels = document.querySelectorAll('.dropdown-item label');
-				labels.forEach(function(label) {
-					label.addEventListener('click', function(event) {
-						event.stopPropagation();
-					});
-				});
+			document.addEventListener("DOMContentLoaded", function() {
+				mbirdFilter = new MBirdFilter();
 			});
 		</script>
-		<style>
-			.dropdown-filter {
-				position: relative;
-				display: inline-block;
-			}
-			.dropdown-toggle {
-				background-color: #007bff;
-				color: white;
-				padding: 10px;
-				border: none;
-				cursor: pointer;
-			}
-			.dropdown-menu {
-				display: none;
-				position: absolute;
-				top: 100%; /* Position below the toggle button */
-				left: 0;
-				background-color: white;
-				box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-				z-index: 1;
-			}
-			.dropdown-menu.show {
-				display: block;
-			}
-			.dropdown-item {
-				padding: 10px;
-				cursor: pointer;
-			}
-			.dropdown-item:hover {
-				background-color: #f1f1f1;
-			}
-		</style>
+
 		<?php
 		$content = ob_get_clean();
 		return $content;
 	}
 
-	// filter ajax
-	public function mbird_filter_ajax() {
-		$posts = get_posts( array(
-			'post_type' => 'post',
-			'posts_per_page' => -1
-		) );
+	// initial data load
+	public function mbird_load_ajax() {
+		// Retrieve shortcode attributes from the AJAX request
+		$atts = isset($_POST['shortcode_atts']) ? json_decode(stripslashes($_POST['shortcode_atts']), true) : array();
 
-		$response = array();
-		foreach ( $posts as $post ) {
-			$response[] = array(
-				'id' => $post->ID,
-				'title' => $post->post_title,
-				'content' => $post->post_content
-			);
+		$page = isset( $_POST['page'] ) ? intval($_POST['page']) : 1;
+		$posts_per_page = isset( $atts['posts_per_page'] ) ? $atts['posts_per_page'] : 9;
+
+		$args = array(
+			'post_type' => $atts['post_type'],
+			'posts_per_page' => $posts_per_page,
+			'order' => $atts['order'],
+			'orderby' => $atts['orderby'],
+			'paged' => $page
+		);
+
+		$posts = new WP_Query( $args );
+		$output = '';
+
+		if($posts->have_posts()) {
+			ob_start();
+			while($posts->have_posts()) {
+				$posts->the_post();
+				include plugin_dir_path( __FILE__ ) . 'templates/content-post.php';
+			}
+			$output = ob_get_clean();
+		} else {
+			$output = 'No posts found.';
 		}
 
-		wp_send_json( $response );
+		wp_send_json($output);
+	}
+
+	// filter ajax
+	public function mbird_filter_ajax() {
+		// Basic static response
+		$response = array(
+			'status' => 'success',
+			'message' => 'AJAX request received successfully.'
+		);
+
+		$response = $_POST['terms'];
+
+		wp_send_json($response);
 	}
 
 	// activation hook
