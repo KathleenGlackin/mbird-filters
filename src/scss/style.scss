@@ -8,6 +8,7 @@
 		top: 0;
 		background-color: #fff;
 		padding-top: 18px;
+		z-index: 1;
 
 		.sticky-block-wrapper {
 			padding: 0 8px;
@@ -127,6 +128,12 @@
 	}
 	#mbird-filter-loader {
 		display: none;
+		text-align: center;
+		margin-top: 20px;
+
+		img {
+			width: 40px;
+		}
 	}
 	.mbird-filter-pagination {
 		text-align: center;

@@ -33,7 +33,7 @@ class MBirdFilter {
 		jQuery('#mbird-load-more').on('click', (event) => {
 			event.preventDefault();
 			this.currentPage++;
-			this._loadData();
+			this._loadData(true); // Pass true to indicate that this is a load more request
 		});
 
 		// add event listener for reset button
@@ -47,18 +47,22 @@ class MBirdFilter {
 		const urlParams = new URLSearchParams(window.location.search);
 
 		urlParams.forEach((value, key) => {
-			const filterElement = jQuery(`#filter-${key}-${value}`);
-			if (filterElement.length) {
-				filterElement.prop('checked', true);
-			}
+			const values = value.split(',');
+			values.forEach(val => {
+				const filterElement = jQuery(`#filter-${key}-${val}`);
+				if (filterElement.length) {
+					filterElement.prop('checked', true);
+				}
+			});
 		});
 
 		// Apply filters based on URL parameters
 		this._runFilters();
 	}
 
-	_loadData() {
+	_loadData(isLoadMore = false) {
 		jQuery("#mbird-filter-loader").show();
+		jQuery('.ymc-post-custom-layout').css('opacity', '0.5');
 
 		const shortcodeAtts = jQuery('input[name="shortcode_atts"]').val();
 
@@ -74,7 +78,11 @@ class MBirdFilter {
 			success: (response) => {
 				// if there are posts to display, append them to the list
 				if(response.content) {
-					jQuery('#mbird-filter-results').append(response.content);
+					if (isLoadMore) {
+						jQuery('#mbird-filter-results').append(response.content);
+					} else {
+						jQuery('#mbird-filter-results').html(response.content);
+					}
 
 					// Update total number of posts
 					this.totalPosts = response.total;
@@ -103,6 +111,7 @@ class MBirdFilter {
 			},
 			complete: () => {
 				jQuery('#mbird-filter-loader').hide();
+				jQuery('.ymc-post-custom-layout').css('opacity', '1');
 			}
 		});
 	}
@@ -171,7 +180,12 @@ class MBirdFilter {
 		});
 
 		this.currentPage = 1; // Reset to the first page
-		jQuery('#mbird-filter-results').empty(); // Clear previous results
+
+		// Scroll to the top of the mbird-filter container
+		jQuery('html, body').animate({
+			scrollTop: jQuery('.mbird-filter').offset().top
+		}, 500);
+
 		this._loadData();
 	}
 
