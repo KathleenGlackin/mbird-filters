@@ -17,6 +17,9 @@ class MBird_Filters {
 	private $plugin_slug = 'mbird-filters';
 	private $plugin_file = 'mbird-filters/mbird-filters.php';
 	private $github_url = 'https://api.github.com/repos/KathleenGlackin/mbird-filters/releases/latest';
+	private $custom_field_labels = array(
+		'grant_year' => 'Years'
+	);
 
 	public function __construct() {
 		add_shortcode( 'mbird_filter', array( $this, 'mbird_filters_shortcode' ) );
@@ -51,22 +54,36 @@ class MBird_Filters {
 			'posts_per_page' => 9
 		), $atts, 'mbird_filter' );
 
-		$taxonomies = explode( ',', $atts['filters'] ); // convert filter options set to array
+			$filters = explode( ',', $atts['filters'] ); // convert filter options set to array
 
 		$tax_query = array(
 			'relation' => 'AND'
 		);
 
-		foreach($taxonomies as $tax) {
-			$tax_query[] =
-			array(
-				'taxonomy' => $tax,
-				'field' => 'slug',
-				'terms' => array()
-			);
+		foreach($filters as $filter) {
+			if(taxonomy_exists($filter)) {
+				$tax_query[] =
+				array(
+					'taxonomy' => $filter,
+					'field' => 'slug',
+					'terms' => array()
+				);
+			} else {
+				$meta_values = $this->get_custom_field_info($filter);
+				$label = $this->get_custom_field_label($filter);
+
+				if($meta_values) {
+					$meta_query[] =
+					array(
+						'key' => $filter,
+						'value' => array()
+					);
+				}
+			}
 		}
 
 		$atts['tax_query'] = $tax_query;
+		$atts['meta_query'] = $meta_query;
 		unset($atts['filters']);
 
 		ob_start(); ?>
@@ -78,30 +95,53 @@ class MBird_Filters {
 						
 						<a class="btn-all" href="#" id="mbird-filter-reset"><?php _e('Reset', 'textdomain' ); ?></a>
 
-						<?php foreach($taxonomies as $tax) :
-							// get the full taxonomy object
-							$full_tax = get_taxonomy( $tax ); ?>
-							<div class="dropdown-filter tax-<?php echo esc_attr( $tax ); ?>">
-								<a class="menu-active dropdown-toggle" id="dropdownMenuButton-<?php echo esc_attr( $tax ); ?>">
-									<?php echo esc_html( $full_tax->labels->name ); ?>
-									<i class="arrow down"></i>
-								</a>
+						<?php foreach($filters as $filter) :
 
-								<div class="dropdown-menu" id="dropdownMenu-<?php echo esc_attr( $tax ); ?>">
-									<?php
-									$terms = get_terms( array(
-										'taxonomy' => $tax,
-										'hide_empty' => false
-									) );
-									foreach ( $terms as $term ) : ?>
-										<div class="dropdown-item">
-											<input type="checkbox" id="filter-<?php echo esc_attr( $tax ); ?>-<?php echo esc_attr( $term->slug ); ?>" class="filter-checkbox" value="<?php echo esc_attr( $term->slug ); ?>" name="filter-<?php echo esc_attr( $tax ); ?>">
-											<label for="filter-<?php echo esc_attr( $tax ); ?>-<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></label>
-										</div>
-									<?php endforeach; ?>
+							if(taxonomy_exists($filter)) :
+								// get the full taxonomy object
+								$full_tax = get_taxonomy( $filter ); ?>
+								<div class="dropdown-filter tax-<?php echo esc_attr( $filter ); ?>">
+									<a class="menu-active dropdown-toggle" id="dropdownMenuButton-<?php echo esc_attr( $filter ); ?>">
+										<?php echo esc_html( $full_tax->labels->name ); ?>
+										<i class="arrow down"></i>
+									</a>
+
+									<div class="dropdown-menu" id="dropdownMenu-<?php echo esc_attr( $filter ); ?>">
+										<?php
+										$terms = get_terms( array(
+											'taxonomy' => $filter,
+											'hide_empty' => false
+										) );
+										foreach ( $terms as $term ) : ?>
+											<div class="dropdown-item">
+												<input type="checkbox" id="filter-<?php echo esc_attr( $filter ); ?>-<?php echo esc_attr( $term->slug ); ?>" class="filter-checkbox" value="<?php echo esc_attr( $term->slug ); ?>" name="filter-<?php echo esc_attr( $filter ); ?>">
+												<label for="filter-<?php echo esc_attr( $filter ); ?>-<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></label>
+											</div>
+										<?php endforeach; ?>
+									</div>
 								</div>
-							</div>
-						<?php endforeach; ?>
+							<?php else :
+								$meta_values = $this->get_custom_field_info($filter);
+								$label = $this->get_custom_field_label($filter);
+								if($meta_values) : ?>
+									<div class="dropdown-filter meta-<?php echo esc_attr( $filter ); ?>">
+										<a class="menu-active dropdown-toggle" id="dropdownMenuButton-<?php echo esc_attr( $filter ); ?>">
+											<?php echo esc_html( $label ); ?>
+											<i class="arrow down"></i>
+										</a>
+
+										<div class="dropdown-menu" id="dropdownMenu-<?php echo esc_attr( $filter ); ?>">
+											<?php foreach ( $meta_values as $value ) : ?>
+												<div class="dropdown-item">
+													<input type="checkbox" id="filter-<?php echo esc_attr( $filter ); ?>-<?php echo esc_attr( sanitize_title($value) ); ?>" class="filter-checkbox" value="<?php echo esc_attr( $value ); ?>" name="filter-<?php echo esc_attr( $filter ); ?>">
+													<label for="filter-<?php echo esc_attr( $filter ); ?>-<?php echo esc_attr( sanitize_title($value) ); ?>"><?php echo esc_html( $value ); ?></label>
+												</div>
+											<?php endforeach; ?>
+										</div>
+									</div>
+								<?php endif;
+							endif;
+						endforeach; ?>
 					</form>
 
 					<div id="selected-filters" class="selected-items">
@@ -174,6 +214,17 @@ class MBird_Filters {
 
 			if (!empty($tax_query)) {
 				$args['tax_query'] = $tax_query;
+			}
+		}
+
+		// conditionally set meta_query if any of the values are set
+		if (isset($atts['meta_query']) && !empty($atts['meta_query'])) {
+			$meta_query = array_filter($atts['meta_query'], function($query) {
+				return !empty($query['value']);
+			});
+
+			if (!empty($meta_query)) {
+				$args['meta_query'] = $meta_query;
 			}
 		}
 
@@ -280,6 +331,19 @@ class MBird_Filters {
 				}
 			}
 		}
+	}
+
+	private function get_custom_field_info($field) {
+		global $wpdb;
+		$meta_values = $wpdb->get_col( $wpdb->prepare(
+			"SELECT DISTINCT meta_value FROM $wpdb->postmeta WHERE meta_key = %s",
+			$field
+		) );
+		return $meta_values;
+	}
+
+	private function get_custom_field_label($field) {
+		return isset($this->custom_field_labels[$field]) ? $this->custom_field_labels[$field] : ucfirst($field);
 	}
 
 	// activation hook

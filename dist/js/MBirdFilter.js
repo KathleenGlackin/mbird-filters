@@ -120,21 +120,31 @@ class MBirdFilter {
 		const filterData = jQuery('#mbird-filter-form').serializeArray();
 		let shortcodeAtts = JSON.parse(jQuery('input[name="shortcode_atts"]').val());
 
-		// Reset terms in tax_query
+		// Reset terms in tax_query and values in meta_query
 		Object.keys(shortcodeAtts.tax_query).forEach(key => {
 			if (Array.isArray(shortcodeAtts.tax_query[key].terms)) {
 				shortcodeAtts.tax_query[key].terms = [];
 			}
 		});
+		Object.keys(shortcodeAtts.meta_query).forEach(key => {
+			if (Array.isArray(shortcodeAtts.meta_query[key].value)) {
+				shortcodeAtts.meta_query[key].value = [];
+			}
+		});
 
 		const urlParams = new URLSearchParams(window.location.search);
 		const taxonomyParams = {};
+		const metaParams = {};
 		const selectedFilters = [];
 
 		// Clear existing filter parameters from URL
 		Object.keys(shortcodeAtts.tax_query).forEach(key => {
 			const taxonomy = shortcodeAtts.tax_query[key].taxonomy;
 			urlParams.delete(taxonomy);
+		});
+		Object.keys(shortcodeAtts.meta_query).forEach(key => {
+			const metaKey = shortcodeAtts.meta_query[key].key;
+			urlParams.delete(metaKey);
 		});
 
 		filterData.forEach(item => {
@@ -143,6 +153,11 @@ class MBirdFilter {
 				Object.keys(shortcodeAtts.tax_query).forEach(taxKey => {
 					if (shortcodeAtts.tax_query[taxKey].taxonomy === key) {
 						shortcodeAtts.tax_query[taxKey].terms.push(item.value);
+					}
+				});
+				Object.keys(shortcodeAtts.meta_query).forEach(metaKey => {
+					if (shortcodeAtts.meta_query[metaKey].key === key) {
+						shortcodeAtts.meta_query[metaKey].value.push(item.value);
 					}
 				});
 				if (!taxonomyParams[key]) {
@@ -161,13 +176,16 @@ class MBirdFilter {
 		Object.keys(taxonomyParams).forEach(key => {
 			urlParams.set(key, taxonomyParams[key].join(','));
 		});
+		Object.keys(metaParams).forEach(key => {
+			urlParams.set(key, metaParams[key].join(','));
+		});
 		const newUrl = decodeURIComponent(`${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`);
 		history.pushState(null, '', newUrl);
 
 		// update shortcode_atts with the new filters
 		jQuery('input[name="shortcode_atts"]').val(JSON.stringify(shortcodeAtts));
 
-		 // Preserve the #no-remove element and update the selected filters
+		// Preserve the #no-remove element and update the selected filters
 		const noRemoveElement = jQuery('#no-remove').detach();
 		jQuery('#selected-filters').html(selectedFilters);
 		jQuery('#selected-filters').append(noRemoveElement);
@@ -192,10 +210,15 @@ class MBirdFilter {
 	_resetFilters() {
 		let shortcodeAtts = JSON.parse(jQuery('input[name="shortcode_atts"]').val());
 
-		// Clear only the terms in tax_query
+		// Clear only the terms in tax_query and values in meta_query
 		Object.keys(shortcodeAtts.tax_query).forEach(key => {
 			if (Array.isArray(shortcodeAtts.tax_query[key].terms)) {
 				shortcodeAtts.tax_query[key].terms = [];
+			}
+		});
+		Object.keys(shortcodeAtts.meta_query).forEach(key => {
+			if (Array.isArray(shortcodeAtts.meta_query[key].value)) {
+				shortcodeAtts.meta_query[key].value = [];
 			}
 		});
 
@@ -204,6 +227,10 @@ class MBirdFilter {
 		Object.keys(shortcodeAtts.tax_query).forEach(key => {
 			const taxonomy = shortcodeAtts.tax_query[key].taxonomy;
 			urlParams.delete(taxonomy);
+		});
+		Object.keys(shortcodeAtts.meta_query).forEach(key => {
+			const metaKey = shortcodeAtts.meta_query[key].key;
+			urlParams.delete(metaKey);
 		});
 		const newUrl = `${window.location.pathname}${urlParams.toString() ? '?' + urlParams.toString() : ''}`;
 		history.pushState(null, '', newUrl);
