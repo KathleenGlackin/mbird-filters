@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.5
+ * Version: 1.6
  * 
  */
 
@@ -145,7 +145,7 @@ class MBird_Filters {
 					</form>
 
 					<div id="selected-filters" class="selected-items">
-						<p id="no-remove"><span id="total-posts"></span> <?php _e('recipients selected', 'textdomain' ); ?> </p>
+						<p id="no-remove"><span id="total-posts"></span> <?php _e('grant recipients selected,', 'textdomain' ); ?> <span id="total-awards"></span> <?php _e('grant dollars awarded, ', 'textdomain' ); ?> <span id="total-percent"></span><?php _e('% of grants', 'textdomain' ); ?></p>
 					</div>
 
 					<div class="table-header-wrap uag-hide-mob">
@@ -228,6 +228,7 @@ class MBird_Filters {
 			}
 		}
 
+		// Query for the current page
 		$posts = new WP_Query( $args );
 		$output = '';
 
@@ -235,6 +236,7 @@ class MBird_Filters {
 			ob_start();
 			while($posts->have_posts()) {
 				$posts->the_post();
+
 				include plugin_dir_path( __FILE__ ) . 'templates/content-post.php';
 			}
 			$output = ob_get_clean();
@@ -242,9 +244,33 @@ class MBird_Filters {
 			$output = false;
 		}
 
+		// Query for all matching posts without pagination to calculate total awards
+		$args['posts_per_page'] = -1;
+		$args['paged'] = 1;
+		$all_posts = new WP_Query( $args );
+		$total_awards_all = 0;
+
+		if($all_posts->have_posts()) {
+			while($all_posts->have_posts()) {
+				$all_posts->the_post();
+
+				$grant_amount = get_field('grant_amount');
+				if ($grant_amount) {
+					// Remove dollar sign and commas, then convert to integer
+					$grant_amount = intval(str_replace(array('$', ','), '', $grant_amount));
+					$total_awards_all += $grant_amount;
+				}
+			}
+		}
+
+		// calculate percent of total recipients shown
+		$total_percent = ( $posts->found_posts / wp_count_posts($atts['post_type'])->publish ) * 100;
+
 		$response = array(
 			'content' => $output,
-			'total' => $posts->found_posts
+			'total' => $posts->found_posts,
+			'awards' => $total_awards_all,
+			'percent' => round($total_percent)
 		);
 
 		wp_send_json($response);

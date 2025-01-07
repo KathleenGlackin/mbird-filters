@@ -2,8 +2,8 @@ class MBirdFilter {
 	constructor() {
 		this.filterFormData = jQuery('#mbird-filter-form').serialize();
 		this.currentPage = 1;
-		this.postsPerPage = 9; // Set this to match the posts_per_page value in the shortcode
-		this.totalPosts = 0;
+		this.postsPerPage = 9;
+		this.totalPosts = this.percent = this.award = 0;
 		this._init();
 	}
 
@@ -73,7 +73,7 @@ class MBirdFilter {
 				action: 'mbird_load',
 				security: jQuery('#mbird_filter_nonce_field').val(),
 				shortcode_atts: shortcodeAtts,
-				page: this.currentPage // Include current page in the request
+				page: this.currentPage
 			},
 			success: (response) => {
 				// if there are posts to display, append them to the list
@@ -88,6 +88,16 @@ class MBirdFilter {
 					this.totalPosts = response.total;
 					const totalPostsElement = jQuery('#total-posts');
 					totalPostsElement.text(`${response.total}`);
+
+					// update total amount of awards
+					this.awards = response.awards;
+					const awardElement = jQuery('#total-awards');
+					awardElement.text(`$${response.awards.toLocaleString()}`);
+
+					// update percent of total posts pulled
+					this.percent = response.percent;
+					const percentElement = jQuery('#total-percent');
+					percentElement.text(`${response.percent}`);
 
 					// Check if there are more posts to load
 					const loadedPosts = jQuery('#mbird-filter-results .post-item').length;
@@ -104,6 +114,14 @@ class MBirdFilter {
 					// Update total number of posts to 0
 					const totalPostsElement = jQuery('#total-posts');
 					totalPostsElement.text('0');
+
+					// Update total grant amount to 0
+					const awardElement = jQuery('#total-awards');
+					awardElement.text('$0');
+
+					// Update percent to 0
+					const percentElement = jQuery('#total-percent');
+					percentElement.text('0');
 				}
 			},
 			error: function(xhr, status, error) {
