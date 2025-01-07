@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.7.1
+ * Version: 1.7.2
  * 
  */
 
@@ -57,7 +57,7 @@ class MBird_Filters {
 			'posts_per_page' => 9
 		), $atts, 'mbird_filter' );
 
-			$filters = explode( ',', $atts['filters'] ); // convert filter options set to array
+		$filters = explode( ',', $atts['filters'] ); // convert filter options set to array
 
 		$tax_query = array(
 			'relation' => 'AND'
@@ -72,8 +72,8 @@ class MBird_Filters {
 					'terms' => array()
 				);
 			} else {
-				$meta_values = $this->get_custom_field_info($filter);
-				$label = $this->get_custom_field_label($filter);
+				$meta_values = $this->mbird_get_custom_field_info($filter);
+				$label = $this->mbird_get_custom_field_label($filter);
 
 				if($meta_values) {
 					$meta_query[] =
@@ -124,8 +124,8 @@ class MBird_Filters {
 									</div>
 								</div>
 							<?php else :
-								$meta_values = $this->get_custom_field_info($filter);
-								$label = $this->get_custom_field_label($filter);
+								$meta_values = $this->mbird_get_custom_field_info($filter);
+								$label = $this->mbird_get_custom_field_label($filter);
 								if($meta_values) :
 									// sort values alphabetically
 									sort($meta_values); ?>
@@ -200,8 +200,8 @@ class MBird_Filters {
 		// Retrieve shortcode attributes from the AJAX request
 		$atts = isset($_POST['shortcode_atts']) ? json_decode(stripslashes($_POST['shortcode_atts']), true) : array();
 
-		$page = isset( $_POST['page'] ) ? intval($_POST['page']) : 1;
-		$posts_per_page = isset( $atts['posts_per_page'] ) ? $atts['posts_per_page'] : 9;
+		$page = isset($_POST['page']) ? intval($_POST['page']) : 1;
+		$posts_per_page = isset($atts['posts_per_page']) ? $atts['posts_per_page'] : 9;
 
 		$args = array(
 			'post_type' => $atts['post_type'],
@@ -234,15 +234,15 @@ class MBird_Filters {
 		}
 
 		// Query for the current page
-		$posts = new WP_Query( $args );
+		$posts = new WP_Query($args);
 		$output = '';
 
-		if($posts->have_posts()) {
+		if ($posts->have_posts()) {
 			ob_start();
-			while($posts->have_posts()) {
+			while ($posts->have_posts()) {
 				$posts->the_post();
 
-				include plugin_dir_path( __FILE__ ) . 'templates/content-post.php';
+				include plugin_dir_path(__FILE__) . 'templates/content-post.php';
 			}
 			$output = ob_get_clean();
 		} else {
@@ -252,11 +252,11 @@ class MBird_Filters {
 		// Query for all matching posts without pagination to calculate total awards
 		$args['posts_per_page'] = -1;
 		$args['paged'] = 1;
-		$all_posts = new WP_Query( $args );
+		$all_posts = new WP_Query($args);
 		$total_awards = 0;
 
-		if($all_posts->have_posts()) {
-			while($all_posts->have_posts()) {
+		if ($all_posts->have_posts()) {
+			while ($all_posts->have_posts()) {
 				$all_posts->the_post();
 
 				$grant_amount = get_field('grant_amount');
@@ -269,7 +269,7 @@ class MBird_Filters {
 		}
 
 		// calculate percent of total grant money shown
-		$total_percent = ( $total_awards / $this->total_awards_all ) * 100;
+		$total_percent = $this->total_awards_all > 0 ? ($total_awards / $this->total_awards_all) * 100 : 0;
 
 		$response = array(
 			'content' => $output,
@@ -364,7 +364,7 @@ class MBird_Filters {
 		}
 	}
 
-	private function get_custom_field_info($field) {
+	private function mbird_get_custom_field_info($field) {
 		global $wpdb;
 		$meta_values = $wpdb->get_col( $wpdb->prepare(
 			"SELECT DISTINCT meta_value FROM $wpdb->postmeta WHERE meta_key = %s",
@@ -373,18 +373,18 @@ class MBird_Filters {
 		return $meta_values;
 	}
 
-	private function get_custom_field_label($field) {
+	private function mbird_get_custom_field_label($field) {
 		return isset($this->custom_field_labels[$field]) ? $this->custom_field_labels[$field] : ucfirst($field);
 	}
 
 	private function calculate_total_awards() {
 		global $wpdb;
-		$amounts = $wpdb->get_results('SELECT meta_value FROM wp_postmeta WHERE meta_key = "grant_amount"', OBJECT);
+		$amounts = $wpdb->get_results('SELECT meta_value FROM ' . $wpdb->postmeta . ' WHERE meta_key = "grant_amount"', OBJECT);
 		$total_awards_all = 0;
 
 		foreach ($amounts as $amount) {
-			$amount = intval(str_replace(array('$', ','), '', $amount->meta_value));
-			$total_awards_all += $amount;
+			$grant_amount = intval(str_replace(array('$', ','), '', $amount->meta_value));
+			$total_awards_all += $grant_amount;
 		}
 
 		return $total_awards_all;
