@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.7
+ * Version: 1.7.1
  * 
  */
 
@@ -126,7 +126,9 @@ class MBird_Filters {
 							<?php else :
 								$meta_values = $this->get_custom_field_info($filter);
 								$label = $this->get_custom_field_label($filter);
-								if($meta_values) : ?>
+								if($meta_values) :
+									// sort values alphabetically
+									sort($meta_values); ?>
 									<div class="dropdown-filter meta-<?php echo esc_attr( $filter ); ?>">
 										<a class="menu-active dropdown-toggle" id="dropdownMenuButton-<?php echo esc_attr( $filter ); ?>">
 											<?php echo esc_html( $label ); ?>
