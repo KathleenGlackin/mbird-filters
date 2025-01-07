@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.6
+ * Version: 1.7
  * 
  */
 
@@ -20,6 +20,7 @@ class MBird_Filters {
 	private $custom_field_labels = array(
 		'grant_year' => 'Years'
 	);
+	private $total_awards_all = 0;
 
 	public function __construct() {
 		add_shortcode( 'mbird_filter', array( $this, 'mbird_filters_shortcode' ) );
@@ -32,6 +33,8 @@ class MBird_Filters {
 		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'mbird_check_for_update' ) );
 		add_filter( 'plugins_api', array( $this, 'mbird_plugins_api_handler' ), 10, 3 );
 		add_action( 'upgrader_process_complete', array( $this, 'mbird_rename_plugin_folder' ), 10, 2 );
+
+		$this->total_awards_all = $this->calculate_total_awards();
 	}
 
 	// enqueue scripts
@@ -50,7 +53,7 @@ class MBird_Filters {
 			'post_type' => 'post',
 			'filters' => '',
 			'order' => 'ASC',
-			'orderby' => 'name',
+			'orderby' => 'title',
 			'posts_per_page' => 9
 		), $atts, 'mbird_filter' );
 
@@ -145,7 +148,7 @@ class MBird_Filters {
 					</form>
 
 					<div id="selected-filters" class="selected-items">
-						<p id="no-remove"><span id="total-posts"></span> <?php _e('grant recipients selected,', 'textdomain' ); ?> <span id="total-awards"></span> <?php _e('grant dollars awarded, ', 'textdomain' ); ?> <span id="total-percent"></span><?php _e('% of grants', 'textdomain' ); ?></p>
+						<p id="no-remove"><span id="total-posts"></span> <?php _e('grant recipients selected,', 'textdomain' ); ?> <span id="total-awards"></span> <?php _e('grant dollars awarded, ', 'textdomain' ); ?> <span id="total-percent"></span><?php _e('% of grant dollars', 'textdomain' ); ?></p>
 					</div>
 
 					<div class="table-header-wrap uag-hide-mob">
@@ -248,7 +251,7 @@ class MBird_Filters {
 		$args['posts_per_page'] = -1;
 		$args['paged'] = 1;
 		$all_posts = new WP_Query( $args );
-		$total_awards_all = 0;
+		$total_awards = 0;
 
 		if($all_posts->have_posts()) {
 			while($all_posts->have_posts()) {
@@ -258,18 +261,18 @@ class MBird_Filters {
 				if ($grant_amount) {
 					// Remove dollar sign and commas, then convert to integer
 					$grant_amount = intval(str_replace(array('$', ','), '', $grant_amount));
-					$total_awards_all += $grant_amount;
+					$total_awards += $grant_amount;
 				}
 			}
 		}
 
-		// calculate percent of total recipients shown
-		$total_percent = ( $posts->found_posts / wp_count_posts($atts['post_type'])->publish ) * 100;
+		// calculate percent of total grant money shown
+		$total_percent = ( $total_awards / $this->total_awards_all ) * 100;
 
 		$response = array(
 			'content' => $output,
 			'total' => $posts->found_posts,
-			'awards' => $total_awards_all,
+			'awards' => $total_awards,
 			'percent' => round($total_percent)
 		);
 
@@ -370,6 +373,19 @@ class MBird_Filters {
 
 	private function get_custom_field_label($field) {
 		return isset($this->custom_field_labels[$field]) ? $this->custom_field_labels[$field] : ucfirst($field);
+	}
+
+	private function calculate_total_awards() {
+		global $wpdb;
+		$amounts = $wpdb->get_results('SELECT meta_value FROM wp_postmeta WHERE meta_key = "grant_amount"', OBJECT);
+		$total_awards_all = 0;
+
+		foreach ($amounts as $amount) {
+			$amount = intval(str_replace(array('$', ','), '', $amount->meta_value));
+			$total_awards_all += $amount;
+		}
+
+		return $total_awards_all;
 	}
 
 	// activation hook

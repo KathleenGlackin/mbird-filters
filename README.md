@@ -20,19 +20,19 @@ Mockingbird Filters is a WordPress plugin that provides a collection of filters 
 To use the Mockingbird Filters plugin, add the following shortcode to any post or page:
 
 ```php
-[mbird_filter post_type="post" filters="category,tag" order="ASC" orderby="name" posts_per_page="9"]
+[mbird_filter post_type="post" filters="category,tag" order="ASC" orderby="title" posts_per_page="9"]
 ```
 
 #### Shortcode Attributes
 
 - `post_type` (string) - The post type to filter. Default is `post`.
-- `filters` (string) - A comma-separated list of taxonomies to filter by. Example: `category,tag`.
+- `filters` (string) - A comma-separated list of taxonomies or custom fields to filter by. Example: `category,tag,custom-field`.
 - `order` (string) - The order of the posts. Accepts `ASC` or `DESC`. Default is `ASC`.
-- `orderby` (string) - The field to order the posts by. Default is `name`.
+- `orderby` (string) - The field to order the posts by. Default is `title`.
 - `posts_per_page` (int) - The number of posts to display per page. Default is `9`.
 
 ### Example
 
 ```php
-[mbird_filter post_type="grant-recipient" filters="grant-type,grant_category,state" order="ASC" orderby="name" posts_per_page="10"]
+[mbird_filter post_type="grant-recipient" filters="grant-type,grant_category,state,grant_year" posts_per_page="10"]
 ```
