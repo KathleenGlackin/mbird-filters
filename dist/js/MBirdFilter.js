@@ -97,7 +97,7 @@ class MBirdFilter {
 					// update percent of total posts pulled
 					this.percent = response.percent;
 					const percentElement = jQuery('#total-percent');
-					percentElement.text(`${response.percent}`);
+					percentElement.html(`${response.percent}`+'%');
 
 					// Check if there are more posts to load
 					const loadedPosts = jQuery('#mbird-filter-results .post-item').length;
@@ -121,7 +121,7 @@ class MBirdFilter {
 
 					// Update percent to 0
 					const percentElement = jQuery('#total-percent');
-					percentElement.text('0');
+					percentElement.text('0%');
 				}
 			},
 			error: function(xhr, status, error) {

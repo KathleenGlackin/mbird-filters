@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.7.3
+ * Version: 1.8
  * 
  */
 
@@ -95,11 +95,8 @@ class MBird_Filters {
 				<div class="sticky-block-wrapper">
 					<form id="mbird-filter-form">
 						<input type="hidden" name="shortcode_atts" value="<?php echo esc_attr( json_encode( $atts ) ); ?>" />
-						
-						<a class="btn-all" href="#" id="mbird-filter-reset"><?php _e('Reset', 'textdomain' ); ?></a>
 
 						<?php foreach($filters as $filter) :
-
 							if(taxonomy_exists($filter)) :
 								// get the full taxonomy object
 								$full_tax = get_taxonomy( $filter ); ?>
@@ -147,10 +144,18 @@ class MBird_Filters {
 								<?php endif;
 							endif;
 						endforeach; ?>
+
+						<div id="btn-reset">
+							<a class="btn-all" href="#" id="mbird-filter-reset"><?php _e('Reset', 'textdomain' ); ?></a>
+						</div>
 					</form>
 
 					<div id="selected-filters" class="selected-items">
-						<p id="no-remove"><span id="total-posts"></span> <?php _e('grant recipients selected,', 'textdomain' ); ?> <span id="total-awards"></span> <?php _e('grant dollars awarded, ', 'textdomain' ); ?> <span id="total-percent"></span><?php _e('% of grant dollars', 'textdomain' ); ?></p>
+						<ul id="no-remove">
+							<li><span id="total-posts"></span> <?php _e('Grant Recipients Selected', 'textdomain' ); ?><span class="desktop">,</span></li>
+							<li><span id="total-awards"></span> <?php _e('Grant Dollars Awarded', 'textdomain' ); ?><span class="desktop">,</span></li>
+							<li><span id="total-percent"></span><?php _e(' of Total Grant Dollars', 'textdomain' ); ?></li>
+						</ul>
 					</div>
 
 					<div class="table-header-wrap uag-hide-mob">
@@ -274,8 +279,8 @@ class MBird_Filters {
 		$response = array(
 			'content' => $output,
 			'total' => $posts->found_posts,
-			'awards' => $total_awards,
-			'percent' => round($total_percent)
+			'awards' => number_format($total_awards, 2),
+			'percent' => round($total_percent, 1)
 		);
 
 		wp_send_json($response);
