@@ -35,7 +35,7 @@
 		</div>
 
 		<div class="grant-amount-col">
-			<p class="grant-amount-label"><?php the_field('grant_amount'); ?></p>
+			<p class="grant-amount-label">$<?php the_field('grant_amount'); ?></p>
 		</div>
 
 		<div class="grant-type-col">
