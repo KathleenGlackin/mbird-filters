@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.8
+ * Version: 1.8.1
  * 
  */
 
@@ -266,8 +266,8 @@ class MBird_Filters {
 
 				$grant_amount = get_field('grant_amount');
 				if ($grant_amount) {
-					// Remove dollar sign and commas, then convert to integer
-					$grant_amount = intval(str_replace(array('$', ','), '', $grant_amount));
+					// Remove dollar sign and commas, then convert to float
+					$grant_amount = floatval(str_replace(array('$', ','), '', $grant_amount));
 					$total_awards += $grant_amount;
 				}
 			}
@@ -280,7 +280,7 @@ class MBird_Filters {
 			'content' => $output,
 			'total' => $posts->found_posts,
 			'awards' => number_format($total_awards, 2),
-			'percent' => round($total_percent, 1)
+			'percent' => number_format($total_percent, 2)
 		);
 
 		wp_send_json($response);
@@ -388,7 +388,7 @@ class MBird_Filters {
 		$total_awards_all = 0;
 
 		foreach ($amounts as $amount) {
-			$grant_amount = intval(str_replace(array('$', ','), '', $amount->meta_value));
+			$grant_amount = floatval(str_replace(array('$', ','), '', $amount->meta_value));
 			$total_awards_all += $grant_amount;
 		}
 
