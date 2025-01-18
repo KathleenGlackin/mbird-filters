@@ -4,7 +4,7 @@
  * Description: A collection of filters for the Mockingbird Foundation theme.
  * Author: Kathleen Glackin
  * Author URI: https://kathleenglackin.com
- * Version: 1.8.1
+ * Version: 1.8.2
  * 
  */
 
@@ -72,7 +72,7 @@ class MBird_Filters {
 					'terms' => array()
 				);
 			} else {
-				$meta_values = $this->mbird_get_custom_field_info($filter);
+				$meta_values = $this->mbird_get_custom_field_info($filter, $atts['post_type']);
 				$label = $this->mbird_get_custom_field_label($filter);
 
 				if($meta_values) {
@@ -112,16 +112,31 @@ class MBird_Filters {
 											'taxonomy' => $filter,
 											'hide_empty' => false
 										) );
-										foreach ( $terms as $term ) : ?>
-											<div class="dropdown-item">
-												<input type="checkbox" id="filter-<?php echo esc_attr( $filter ); ?>-<?php echo esc_attr( $term->slug ); ?>" class="filter-checkbox" value="<?php echo esc_attr( $term->slug ); ?>" name="filter-<?php echo esc_attr( $filter ); ?>">
-												<label for="filter-<?php echo esc_attr( $filter ); ?>-<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></label>
-											</div>
-										<?php endforeach; ?>
+										foreach ( $terms as $term ) :
+											// Check if the term has posts of the specified post type
+											$term_posts = get_posts(array(
+												'post_type' => $atts['post_type'],
+												'tax_query' => array(
+													array(
+														'taxonomy' => $filter,
+														'field' => 'slug',
+														'terms' => $term->slug,
+													),
+												),
+												'posts_per_page' => 1,
+												'fields' => 'ids',
+											));
+											if (!empty($term_posts)) : ?>
+												<div class="dropdown-item">
+													<input type="checkbox" id="filter-<?php echo esc_attr( $filter ); ?>-<?php echo esc_attr( $term->slug ); ?>" class="filter-checkbox" value="<?php echo esc_attr( $term->slug ); ?>" name="filter-<?php echo esc_attr( $filter ); ?>">
+													<label for="filter-<?php echo esc_attr( $filter ); ?>-<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></label>
+												</div>
+											<?php endif;
+										endforeach; ?>
 									</div>
 								</div>
 							<?php else :
-								$meta_values = $this->mbird_get_custom_field_info($filter);
+								$meta_values = $this->mbird_get_custom_field_info($filter, $atts['post_type']);
 								$label = $this->mbird_get_custom_field_label($filter);
 								if($meta_values) :
 									// sort values alphabetically
@@ -369,12 +384,15 @@ class MBird_Filters {
 		}
 	}
 
-	private function mbird_get_custom_field_info($field) {
+	private function mbird_get_custom_field_info($field, $post_type) {
 		global $wpdb;
-		$meta_values = $wpdb->get_col( $wpdb->prepare(
-			"SELECT DISTINCT meta_value FROM $wpdb->postmeta WHERE meta_key = %s",
-			$field
-		) );
+		$meta_values = $wpdb->get_col($wpdb->prepare(
+			"SELECT DISTINCT pm.meta_value 
+			FROM $wpdb->postmeta pm
+			INNER JOIN $wpdb->posts p ON pm.post_id = p.ID
+			WHERE pm.meta_key = %s AND p.post_type = %s",
+			$field, $post_type
+		));
 		return $meta_values;
 	}
 
